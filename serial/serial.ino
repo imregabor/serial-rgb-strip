@@ -127,6 +127,9 @@ void loop() {
           if (rgbindex == 2) {
             rgbindex = 0;
             pixels.setPixelColor(nextled, rgb[0], rgb[1], rgb[2]);
+            rgb[0] = 0;
+            rgb[1] = 0;
+            rgb[2] = 0;
             nextled ++;
           } else {
             rgbindex ++;
