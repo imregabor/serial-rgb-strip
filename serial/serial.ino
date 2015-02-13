@@ -9,7 +9,7 @@
 #define NUMPIXELS      8
 
 // Serial port bitrate
-#define BITRATE   9600
+#define BITRATE        115200
 
 // Setial port state machine
 // We are in empty packets
@@ -36,7 +36,7 @@ uint8_t   nextled;
 // Next digit index
 uint8_t   nextdigit;
 
-uint8_t[3] rgb;
+uint8_t rgb[3];
 
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
@@ -73,11 +73,11 @@ void loop() {
           serialState = STATE_DATA;
           rgbindex = 0;
           nextled = 0;
-          nextdigit = 1;
+          nextdigit = 4;
           rgb[0] = 0;
           rgb[1] = 0;
           rgb[2] = 0;
-        } else if (rcv != ' ' && rcv != '\n') {
+        } else if (rcv != ' ' && rcv != '\n' && rcv != ';') {
           serialState = STATE_ERROR;
         }
         break;
@@ -94,6 +94,15 @@ void loop() {
         }
         break;
       case STATE_DATA:
+        if (rcv == ';') {
+          for (int i = nextled; i < NUMPIXELS; i++) {
+            pixels.setPixelColor(i, 0);
+          }  
+          pixels.show();
+          Serial.println("ok.");
+          serialState = STATE_IDLE;
+          break;
+        }
         if (rcv >= '0' && rcv <='9') {
           rcv -= '0';  
         } else if (rcv >= 'A' && rcv <='F') {
@@ -106,7 +115,23 @@ void loop() {
           serialState = STATE_ERROR;
           break;
         }
-        rgb[rgbindex] |= rcv << (4 * nextdigit);
+        rgb[rgbindex] |= rcv << nextdigit;
+        if (nextled == NUMPIXELS) {
+          serialState = STATE_ERROR;
+          break;
+        }
+        if (nextdigit == 4) {
+          nextdigit = 0;
+        } else {
+          nextdigit = 4;
+          if (rgbindex == 2) {
+            rgbindex = 0;
+            pixels.setPixelColor(nextled, rgb[0], rgb[1], rgb[2]);
+            nextled ++;
+          } else {
+            rgbindex ++;
+          }
+        }
         
         break;
     
