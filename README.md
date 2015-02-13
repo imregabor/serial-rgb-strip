@@ -8,7 +8,7 @@ Getting started
 ---------------
 
   - Install Adafruit NeoPixel library from https://github.com/adafruit/Adafruit_NeoPixel
-  - Install CH340 driver when neceassary
+  - Install CH340 driver when neceassary (Do not forget to check binary on <http://virustotal.com>)
   
 SHA512 sum of the win driver for my iformation  
 
