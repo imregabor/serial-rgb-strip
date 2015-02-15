@@ -77,7 +77,7 @@ void loop() {
           rgb[0] = 0;
           rgb[1] = 0;
           rgb[2] = 0;
-        } else if (rcv != ' ' && rcv != '\n' && rcv != ';') {
+        } else if (rcv != ' ' && rcv != '\n' && rcv != '\r' && rcv != ';') {
           serialState = STATE_ERROR;
         }
         break;
@@ -143,7 +143,7 @@ void loop() {
         // Also STATE_ERROR handled here
         // read and 
         serialState = STATE_ERROR;
-        if (rcv == '\n' || rcv == ';' || rcv == ' ') {
+        if (rcv == '\r' || rcv == '\n' || rcv == ';' || rcv == ' ') {
           serialState = STATE_IDLE;  
         } else {
           Serial.println("?");
