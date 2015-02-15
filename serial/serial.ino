@@ -83,11 +83,11 @@ void loop() {
         break;
       case STATE_QM:
         if (rcv == ';') {
-          Serial.print("{ numPixels : ");
+          Serial.print("numPixels:");
           Serial.print(NUMPIXELS, DEC);
-          Serial.print(", bitRate : ");
+          Serial.print(" bitRate:");
           Serial.print(BITRATE, DEC);
-          Serial.println(" }");
+          Serial.println();
           serialState = STATE_IDLE;
         } else {
           serialState = STATE_ERROR;
