@@ -6,7 +6,7 @@
 #define PIN            6
 
 // How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      32
+#define NUMPIXELS      256
 
 // Serial port bitrate
 #define BITRATE        115200
@@ -39,6 +39,7 @@ uint8_t   nextdigit;
 uint8_t rgb[3];
 
 
+
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
 // example for more information on possible values.
@@ -60,6 +61,8 @@ void setup() {
   serialState = STATE_IDLE;
   Serial.begin(BITRATE);
 }
+
+
 
 void loop() {
 
