@@ -53,9 +53,23 @@ void setup() {
   // End of trinket special code
 
   pixels.begin(); // This initializes the NeoPixel library.
-  for (int i = 0; i < NUMPIXELS; i++) {
-    pixels.setPixelColor(i, 0);
+  pixels.clear();
+  pixels.show();
+  for(int i = 0; i < 2; i++) {
+    pixels.setPixelColor(nextled, 255, 0, 0);
+    pixels.show();
+    delay(100);
+    pixels.setPixelColor(nextled, 0, 255, 0);
+    pixels.show();
+    delay(100);
+    pixels.setPixelColor(nextled, 0, 0, 255);
+    pixels.show();
+    delay(100);
+    pixels.setPixelColor(nextled, 255, 255, 255);
+    pixels.show();
+    delay(100);
   }
+  pixels.clear();
   pixels.show();
   
   serialState = STATE_IDLE;
