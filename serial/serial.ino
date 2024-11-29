@@ -6,7 +6,7 @@
 #define PIN            6
 
 // How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      256
+#define MAXNUMPIXELS      256
 
 // Serial port bitrate
 #define BITRATE        115200
@@ -43,7 +43,7 @@ uint8_t rgb[3];
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
 // example for more information on possible values.
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(MAXNUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
@@ -101,7 +101,7 @@ void loop() {
       case STATE_QM:
         if (rcv == ';') {
           Serial.print("numPixels:");
-          Serial.print(NUMPIXELS, DEC);
+          Serial.print(MAXNUMPIXELS, DEC);
           Serial.print(" bitRate:");
           Serial.print(BITRATE, DEC);
           Serial.println();
@@ -112,10 +112,14 @@ void loop() {
         break;
       case STATE_DATA:
         if (rcv == ';') {
-          for (int i = nextled; i < NUMPIXELS; i++) {
+          for (int i = nextled; i < MAXNUMPIXELS; i++) {
             pixels.setPixelColor(i, 0);
           }  
           pixels.show();
+
+          if (pixels.numPixels() != nextled) {
+            pixels.updateLength(nextled);
+          }
           Serial.println("ok.");
           serialState = STATE_IDLE;
           break;
@@ -133,7 +137,7 @@ void loop() {
           break;
         }
         rgb[rgbindex] |= rcv << nextdigit;
-        if (nextled == NUMPIXELS) {
+        if (nextled == MAXNUMPIXELS) {
           serialState = STATE_ERROR;
           break;
         }
