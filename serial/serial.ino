@@ -6,7 +6,7 @@
 #define PIN            6
 
 // How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      8
+#define NUMPIXELS      32
 
 // Serial port bitrate
 #define BITRATE        115200
@@ -150,6 +150,4 @@ void loop() {
         }
     }    
   }
- 
-  
 }
