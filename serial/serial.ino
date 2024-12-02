@@ -7,6 +7,12 @@
 // TODO: benchmark actual requirement
 
 
+// Used in heartbeat
+#define DEVICEID       "1234"
+
+// heartbeat period in ms
+#define HBPERIOD       250
+
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
 #define PIN            6
@@ -65,6 +71,8 @@ uint16_t  nextByteIndex;
 // Note that when reallocation is needed the first frame will be dropped
 bool       needsRealloc;
 uint16_t   reallocTo;
+
+unsigned long nextHb;
 
 
 
@@ -126,11 +134,23 @@ uint8_t * pixelsArr = pixels.getPixels();
 // message "e" (serial buffer empty) was sent since last reception
 bool esent = false;
 
+void sendHeartbeat() {
+  Serial.print("wssgw @ ");
+  Serial.println(DEVICEID);
+}
+
 void loop() {
-  while (!Serial.available() && !esent) {
-    // send only one "e" message
-    Serial.println("e");
-    esent = true;
+  if (!Serial.available()) {
+    if(!esent) {
+      // send only one "e" message
+      Serial.println("e");
+      esent = true;
+    }
+    unsigned long now = millis();
+    if (now > nextHb) {
+      nextHb = now + HBPERIOD;
+      sendHeartbeat();
+    }
   }
   while (Serial.available()) {
     esent = false;
