@@ -20,9 +20,13 @@
 // active low button for lamp test
 #define PIN_LAMPTEST   7
 
+#define PIN_IDENT_BUTTON 8
+#define PIN_IDENT_LED 9
+
 // How many NeoPixels are attached to the Arduino?
 #define MAXNUMPIXELS      512
 
+#define DEBOUNCE_MILLIS   20
 
 
 // Serial port bitrate
@@ -97,6 +101,10 @@ void setup() {
 
   // for lamp test
   pinMode(PIN_LAMPTEST, INPUT_PULLUP);
+  pinMode(PIN_IDENT_BUTTON, INPUT_PULLUP);
+  pinMode(PIN_IDENT_LED, OUTPUT);
+
+  digitalWrite(PIN_IDENT_LED, HIGH);
 
   pixels.begin();
 
@@ -135,6 +143,8 @@ void setup() {
   pixels.clear();
   pixels.show();
   
+  digitalWrite(PIN_IDENT_LED, LOW);
+
   serialState = STATE_IDLE;
   Serial.begin(BITRATE);
 }
@@ -143,17 +153,24 @@ uint8_t * pixelsArr = pixels.getPixels();
 
 // message "e" (serial buffer empty) was sent since last reception
 bool esent = false;
+bool doingLt = false;
+bool doingIdent = false;
+bool identButtonReleased = true;
+unsigned long identButtonDebounce = 0;
 
 void sendHeartbeat() {
   Serial.print("wssgw @ ");
-  Serial.println(DEVICEID);
+  Serial.print(DEVICEID);
+  if (doingIdent) {
+    Serial.print(" ident");
+  }
+  Serial.println();
 }
 
 void sendAbort() {
   Serial.println("x");
 }
 
-bool doingLt = false;
 void pollLamptest() {
   if (doingLt && digitalRead(PIN_LAMPTEST) == HIGH) {
     sendAbort();
@@ -172,6 +189,21 @@ void pollLamptest() {
     }
     pixels.show();
     sendAbort();
+  }
+
+  unsigned long now = millis();
+
+  if (identButtonDebounce <= now) {
+    identButtonDebounce = now;
+    if (digitalRead(PIN_IDENT_BUTTON) == HIGH && !identButtonReleased) {
+      identButtonReleased = true;
+      identButtonDebounce = now + DEBOUNCE_MILLIS;
+    } else if (digitalRead(PIN_IDENT_BUTTON) == LOW && identButtonReleased) {
+      identButtonReleased = false;
+      identButtonDebounce = now + DEBOUNCE_MILLIS;
+      doingIdent = !doingIdent;
+      digitalWrite(PIN_IDENT_LED, doingIdent ? HIGH : LOW);
+    }
   }
 }
 
@@ -273,6 +305,14 @@ void loop() {
           serialState = STATE_RCV_BINARY_COUNT_MSB;
         } else if (rcv == ';') {
           // send ack
+          Serial.println("+");
+        } else if (rcv == 'i') {
+          doingIdent = false;
+          digitalWrite(PIN_IDENT_LED, LOW);
+          Serial.println("+");
+        } else if (rcv == 'I') {
+          doingIdent = false;
+          digitalWrite(PIN_IDENT_LED, HIGH);
           Serial.println("+");
         } else if (rcv == '?') {
           serialState = STATE_QM;
