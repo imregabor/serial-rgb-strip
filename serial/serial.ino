@@ -17,6 +17,9 @@
 // On a Trinket or Gemma we suggest changing this to 1
 #define PIN            6
 
+// active low button for lamp test
+#define PIN_LAMPTEST   7
+
 // How many NeoPixels are attached to the Arduino?
 #define MAXNUMPIXELS      512
 
@@ -45,6 +48,10 @@
 // Next char is binary data
 #define STATE_RCV_BINARY_DATA_NO_REALLOC     6
 #define STATE_RCV_BINARY_DATA_WILL_REALLOC   7
+
+// Next char is expected to be closing ';'
+#define STATE_RCV_BINARY_DATA_NO_REALLOC_EOF     8
+#define STATE_RCV_BINARY_DATA_WILL_REALLOC_EOF   9
 
 // State of serial receive loop, using STATE_xxx values
 uint8_t serialState;
@@ -87,6 +94,9 @@ void setup() {
   if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
 #endif
   // End of trinket special code
+
+  // for lamp test
+  pinMode(PIN_LAMPTEST, INPUT_PULLUP);
 
   pixels.begin();
 
@@ -139,6 +149,32 @@ void sendHeartbeat() {
   Serial.println(DEVICEID);
 }
 
+void sendAbort() {
+  Serial.println("x");
+}
+
+bool doingLt = false;
+void pollLamptest() {
+  if (doingLt && digitalRead(PIN_LAMPTEST) == HIGH) {
+    sendAbort();
+    doingLt = false;
+    pixels.clear();
+    pixels.show();
+    sendAbort();
+  }
+  if (!doingLt && digitalRead(PIN_LAMPTEST) == LOW) {
+    sendAbort();
+    doingLt = true;
+    pixels.updateLength(MAXNUMPIXELS);
+    sendAbort();
+    for (int j = 0; j < MAXNUMPIXELS; j++) {
+      pixels.setPixelColor(j, 255, 255, 255);
+    }
+    pixels.show();
+    sendAbort();
+  }
+}
+
 void loop() {
   if (!Serial.available()) {
     if(!esent) {
@@ -151,6 +187,7 @@ void loop() {
       nextHb = now + HBPERIOD;
       sendHeartbeat();
     }
+    pollLamptest();
   }
   while (Serial.available()) {
     esent = false;
@@ -159,21 +196,19 @@ void loop() {
         pixelsArr[nextByteIndex] = (uint8_t) rcv;
         nextByteIndex++;
         if (nextByteIndex == allBytesToReceive) {
-          serialState = STATE_IDLE;
-          pixels.show();
-          Serial.println("+");
+          serialState = STATE_RCV_BINARY_DATA_NO_REALLOC_EOF;
         }
         continue;
     }
     if (serialState == STATE_RCV_BINARY_DATA_WILL_REALLOC) {
         nextByteIndex++;
         if (nextByteIndex == allBytesToReceive) {
-          serialState = STATE_IDLE;
-          pixels.updateLength(reallocTo);
-          pixelsArr = pixels.getPixels();
-          Serial.println("+");
+          serialState = STATE_RCV_BINARY_DATA_WILL_REALLOC_EOF;
         }
         continue;
+    }
+    if (serialState == STATE_IDLE && rcv == ' ') {
+      continue;
     }
     switch (serialState) {
       case STATE_RCV_BINARY_COUNT_MSB:
@@ -195,7 +230,7 @@ void loop() {
             serialState = STATE_ERROR;
             continue;
           }
-          if (allBytesToReceive != pixels.numPixels()) {
+          if (allBytesToReceive != pixels.numPixels() || doingLt) {
             reallocTo = allBytesToReceive;
             needsRealloc = true;
             serialState = STATE_RCV_BINARY_DATA_WILL_REALLOC;
@@ -205,9 +240,40 @@ void loop() {
           allBytesToReceive *= 3;
         }
         continue;
+      case STATE_RCV_BINARY_DATA_NO_REALLOC_EOF:
+        if (rcv == ';') {
+          serialState = STATE_IDLE;
+          if (!doingLt) {
+            pixels.show();
+          }
+          Serial.println("+");
+        } else if (rcv == ' ') {
+          serialState = STATE_IDLE;
+        } else {
+          serialState = STATE_ERROR;
+        }
+        break;
+      case STATE_RCV_BINARY_DATA_WILL_REALLOC_EOF:
+        if (rcv == ';') {
+          serialState = STATE_IDLE;
+          if (!doingLt) {
+            // Lamp test is for all LEDS, do not realloc
+            pixels.updateLength(reallocTo);
+            pixelsArr = pixels.getPixels();
+          }
+          Serial.println("+");
+        } else if (rcv == ' ') {
+          serialState = STATE_IDLE;
+        } else {
+          serialState = STATE_ERROR;
+        }
+        break;
       case STATE_IDLE:
         if (rcv == 'b') {
           serialState = STATE_RCV_BINARY_COUNT_MSB;
+        } else if (rcv == ';') {
+          // send ack
+          Serial.println("+");
         } else if (rcv == '?') {
           serialState = STATE_QM;
         } else if (rcv == '@') {
@@ -291,8 +357,11 @@ void loop() {
         // Exit on frame delimiter
         serialState = STATE_ERROR;
         if (rcv == '\r' || rcv == '\n' || rcv == ';' || rcv == ' ') {
-          serialState = STATE_IDLE;  
-          Serial.println("+");
+          serialState = STATE_IDLE;
+          if (rcv != ' ') {
+            // safe to recover with sending spaces; terminate with double ';' to have an ack
+            Serial.println("+");
+          }
         } else {
           Serial.println("?");
         }
