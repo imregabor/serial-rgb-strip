@@ -22,6 +22,7 @@
 
 #define PIN_IDENT_BUTTON 8
 #define PIN_IDENT_LED 9
+#define PIN_HB_LED 10
 
 #define PIN_UPDATE_LED_1  2
 #define PIN_UPDATE_LED_2  3
@@ -108,12 +109,14 @@ void setup() {
   pinMode(PIN_LAMPTEST, INPUT_PULLUP);
   pinMode(PIN_IDENT_BUTTON, INPUT_PULLUP);
   pinMode(PIN_IDENT_LED, OUTPUT);
+  pinMode(PIN_HB_LED, OUTPUT);
   pinMode(PIN_UPDATE_LED_1, OUTPUT);
   pinMode(PIN_UPDATE_LED_2, OUTPUT);
   pinMode(PIN_UPDATE_LED_3, OUTPUT);
   pinMode(PIN_UPDATE_LED_4, OUTPUT);
 
   digitalWrite(PIN_IDENT_LED, HIGH);
+  digitalWrite(PIN_HB_LED, HIGH);
   digitalWrite(PIN_UPDATE_LED_1, HIGH);
   digitalWrite(PIN_UPDATE_LED_2, HIGH);
   digitalWrite(PIN_UPDATE_LED_3, HIGH);
@@ -178,12 +181,14 @@ unsigned long identButtonDebounce = 0;
 unsigned long updateLedsTimeout = 0;
 
 void sendHeartbeat() {
+  digitalWrite(PIN_HB_LED, HIGH);
   Serial.print("wssgw @ ");
   Serial.print(DEVICEID);
   if (doingIdent) {
     Serial.print(" ident");
   }
   Serial.println();
+  digitalWrite(PIN_HB_LED, LOW);
 }
 
 void sendAbort() {
