@@ -23,6 +23,11 @@
 #define PIN_IDENT_BUTTON 8
 #define PIN_IDENT_LED 9
 
+#define PIN_UPDATE_LED_1  2
+#define PIN_UPDATE_LED_2  3
+#define PIN_UPDATE_LED_3  4
+#define PIN_UPDATE_LED_4  5
+
 // How many NeoPixels are attached to the Arduino?
 #define MAXNUMPIXELS      512
 
@@ -103,8 +108,17 @@ void setup() {
   pinMode(PIN_LAMPTEST, INPUT_PULLUP);
   pinMode(PIN_IDENT_BUTTON, INPUT_PULLUP);
   pinMode(PIN_IDENT_LED, OUTPUT);
+  pinMode(PIN_UPDATE_LED_1, OUTPUT);
+  pinMode(PIN_UPDATE_LED_2, OUTPUT);
+  pinMode(PIN_UPDATE_LED_3, OUTPUT);
+  pinMode(PIN_UPDATE_LED_4, OUTPUT);
 
   digitalWrite(PIN_IDENT_LED, HIGH);
+  digitalWrite(PIN_UPDATE_LED_1, HIGH);
+  digitalWrite(PIN_UPDATE_LED_2, HIGH);
+  digitalWrite(PIN_UPDATE_LED_3, HIGH);
+  digitalWrite(PIN_UPDATE_LED_4, HIGH);
+
 
   pixels.begin();
 
@@ -144,6 +158,10 @@ void setup() {
   pixels.show();
   
   digitalWrite(PIN_IDENT_LED, LOW);
+  digitalWrite(PIN_UPDATE_LED_1, LOW);
+  digitalWrite(PIN_UPDATE_LED_2, LOW);
+  digitalWrite(PIN_UPDATE_LED_3, LOW);
+  digitalWrite(PIN_UPDATE_LED_4, LOW);
 
   serialState = STATE_IDLE;
   Serial.begin(BITRATE);
@@ -157,6 +175,7 @@ bool doingLt = false;
 bool doingIdent = false;
 bool identButtonReleased = true;
 unsigned long identButtonDebounce = 0;
+unsigned long updateLedsTimeout = 0;
 
 void sendHeartbeat() {
   Serial.print("wssgw @ ");
@@ -204,6 +223,12 @@ void pollLamptest() {
       doingIdent = !doingIdent;
       digitalWrite(PIN_IDENT_LED, doingIdent ? HIGH : LOW);
     }
+  }
+  if (updateLedsTimeout < now) {
+    digitalWrite(PIN_UPDATE_LED_1, LOW);
+    digitalWrite(PIN_UPDATE_LED_2, LOW);
+    digitalWrite(PIN_UPDATE_LED_3, LOW);
+    digitalWrite(PIN_UPDATE_LED_4, LOW);
   }
 }
 
@@ -277,6 +302,23 @@ void loop() {
           serialState = STATE_IDLE;
           if (!doingLt) {
             pixels.show();
+
+            unsigned long now = millis();
+            unsigned long dt = now - updateLedsTimeout + 50 + pixels.numPixels() / 33;
+            updateLedsTimeout = now + 50;
+            digitalWrite(PIN_UPDATE_LED_1, LOW);
+            digitalWrite(PIN_UPDATE_LED_2, LOW);
+            digitalWrite(PIN_UPDATE_LED_3, LOW);
+            digitalWrite(PIN_UPDATE_LED_4, LOW);
+            if (dt <= 10) {
+              digitalWrite(PIN_UPDATE_LED_1, HIGH);
+            } else if (dt <= 20) {
+              digitalWrite(PIN_UPDATE_LED_2, HIGH);
+            } else if (dt < 40) {
+              digitalWrite(PIN_UPDATE_LED_3, HIGH);
+            } else {
+              digitalWrite(PIN_UPDATE_LED_4, HIGH);
+            }
           }
           Serial.println("+");
         } else if (rcv == ' ') {
