@@ -196,9 +196,23 @@ void sendAbort() {
 }
 
 void pollLamptest() {
+  if (doingLt) {
+    digitalWrite(PIN_UPDATE_LED_1, HIGH);
+    digitalWrite(PIN_UPDATE_LED_2, HIGH);
+    digitalWrite(PIN_UPDATE_LED_3, HIGH);
+    digitalWrite(PIN_UPDATE_LED_4, HIGH);
+    digitalWrite(PIN_IDENT_LED, HIGH);
+    digitalWrite(PIN_HB_LED, HIGH);
+  }
   if (doingLt && digitalRead(PIN_LAMPTEST) == HIGH) {
     sendAbort();
     doingLt = false;
+    digitalWrite(PIN_UPDATE_LED_1, LOW);
+    digitalWrite(PIN_UPDATE_LED_2, LOW);
+    digitalWrite(PIN_UPDATE_LED_3, LOW);
+    digitalWrite(PIN_UPDATE_LED_4, LOW);
+    digitalWrite(PIN_IDENT_LED, doingIdent ? HIGH : LOW);
+    digitalWrite(PIN_HB_LED, LOW);
     pixels.clear();
     pixels.show();
     sendAbort();
