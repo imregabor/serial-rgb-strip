@@ -217,8 +217,7 @@ void pollLamptest() {
     pixels.clear();
     pixels.show();
     sendAbort();
-  }
-  if (!doingLt && digitalRead(PIN_LAMPTEST) == LOW) {
+  } else if (!doingLt && digitalRead(PIN_LAMPTEST) == LOW) {
     sendAbort();
     doingLt = true;
     pixels.updateLength(MAXNUMPIXELS);
