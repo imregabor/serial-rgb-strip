@@ -23,11 +23,13 @@
 #define PIN_IDENT_BUTTON 8
 #define PIN_IDENT_LED 9
 #define PIN_HB_LED 10
+#define PIN_HP_LED 12
 
 #define PIN_UPDATE_LED_1  2
 #define PIN_UPDATE_LED_2  3
 #define PIN_UPDATE_LED_3  4
 #define PIN_UPDATE_LED_4  5
+#define PIN_UPDATE_LED_5  11
 
 // How many NeoPixels are attached to the Arduino?
 #define MAXNUMPIXELS      512
@@ -110,17 +112,21 @@ void setup() {
   pinMode(PIN_IDENT_BUTTON, INPUT_PULLUP);
   pinMode(PIN_IDENT_LED, OUTPUT);
   pinMode(PIN_HB_LED, OUTPUT);
+  pinMode(PIN_HP_LED, OUTPUT);
   pinMode(PIN_UPDATE_LED_1, OUTPUT);
   pinMode(PIN_UPDATE_LED_2, OUTPUT);
   pinMode(PIN_UPDATE_LED_3, OUTPUT);
   pinMode(PIN_UPDATE_LED_4, OUTPUT);
+  pinMode(PIN_UPDATE_LED_5, OUTPUT);
 
   digitalWrite(PIN_IDENT_LED, HIGH);
   digitalWrite(PIN_HB_LED, HIGH);
+  digitalWrite(PIN_HP_LED, HIGH);
   digitalWrite(PIN_UPDATE_LED_1, HIGH);
   digitalWrite(PIN_UPDATE_LED_2, HIGH);
   digitalWrite(PIN_UPDATE_LED_3, HIGH);
   digitalWrite(PIN_UPDATE_LED_4, HIGH);
+  digitalWrite(PIN_UPDATE_LED_5, HIGH);
 
 
   pixels.begin();
@@ -160,11 +166,14 @@ void setup() {
   pixels.clear();
   pixels.show();
   
+  digitalWrite(PIN_HB_LED, LOW);
+  digitalWrite(PIN_HP_LED, LOW);
   digitalWrite(PIN_IDENT_LED, LOW);
   digitalWrite(PIN_UPDATE_LED_1, LOW);
   digitalWrite(PIN_UPDATE_LED_2, LOW);
   digitalWrite(PIN_UPDATE_LED_3, LOW);
   digitalWrite(PIN_UPDATE_LED_4, LOW);
+  digitalWrite(PIN_UPDATE_LED_5, LOW);
 
   serialState = STATE_IDLE;
   Serial.begin(BITRATE);
@@ -180,6 +189,7 @@ bool identButtonReleased = true;
 unsigned long identButtonDebounce = 0;
 unsigned long updateLedsTimeout = 0;
 unsigned long hbLedTimeout = 0;
+unsigned long hpLedTimeout = 0;
 unsigned long abortTimeout = 0;
 uint8_t timecheck = 0;
 bool aborting = false;
@@ -210,8 +220,10 @@ void pollLamptest() {
     digitalWrite(PIN_UPDATE_LED_2, LOW);
     digitalWrite(PIN_UPDATE_LED_3, LOW);
     digitalWrite(PIN_UPDATE_LED_4, LOW);
+    digitalWrite(PIN_UPDATE_LED_5, LOW);
     digitalWrite(PIN_IDENT_LED, doingIdent ? HIGH : LOW);
     digitalWrite(PIN_HB_LED, LOW);
+    digitalWrite(PIN_HP_LED, LOW);
     pixels.clear();
     pixels.show();
     sendAbort();
@@ -231,8 +243,10 @@ void pollLamptest() {
     digitalWrite(PIN_UPDATE_LED_2, HIGH);
     digitalWrite(PIN_UPDATE_LED_3, HIGH);
     digitalWrite(PIN_UPDATE_LED_4, HIGH);
+    digitalWrite(PIN_UPDATE_LED_5, HIGH);
     digitalWrite(PIN_IDENT_LED, HIGH);
     digitalWrite(PIN_HB_LED, HIGH);
+    digitalWrite(PIN_HP_LED, HIGH);
   }
 }
 
@@ -256,10 +270,15 @@ void doTimeCheck() {
     digitalWrite(PIN_UPDATE_LED_2, LOW);
     digitalWrite(PIN_UPDATE_LED_3, LOW);
     digitalWrite(PIN_UPDATE_LED_4, LOW);
+    digitalWrite(PIN_UPDATE_LED_5, LOW);
   }
   if (hbLedTimeout < now) {
     digitalWrite(PIN_HB_LED, LOW);
   }
+  if (hpLedTimeout < now) {
+    digitalWrite(PIN_HP_LED, LOW);
+  }
+
   if (now > nextHb) {
     nextHb = now + HBPERIOD;
     sendHeartbeat();
@@ -349,14 +368,17 @@ void loop() {
             digitalWrite(PIN_UPDATE_LED_2, LOW);
             digitalWrite(PIN_UPDATE_LED_3, LOW);
             digitalWrite(PIN_UPDATE_LED_4, LOW);
+            digitalWrite(PIN_UPDATE_LED_5, LOW);
             if (dt <= 10) {
               digitalWrite(PIN_UPDATE_LED_1, HIGH);
             } else if (dt <= 20) {
               digitalWrite(PIN_UPDATE_LED_2, HIGH);
             } else if (dt < 40) {
               digitalWrite(PIN_UPDATE_LED_3, HIGH);
-            } else {
+            } else if (dt < 50) {
               digitalWrite(PIN_UPDATE_LED_4, HIGH);
+            } else {
+              digitalWrite(PIN_UPDATE_LED_5, HIGH);
             }
           }
           Serial.println("+");
@@ -394,6 +416,10 @@ void loop() {
         } else if (rcv == 'I' && !aborting) {
           doingIdent = true;
           digitalWrite(PIN_IDENT_LED, HIGH);
+          Serial.println("+");
+        } else if (rcv == 'p' && !aborting) {
+          digitalWrite(PIN_HP_LED, HIGH);
+          hpLedTimeout = millis() + 25;
           Serial.println("+");
         } else if (rcv == '?') {
           serialState = STATE_QM;
