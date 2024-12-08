@@ -179,6 +179,7 @@ bool doingIdent = false;
 bool identButtonReleased = true;
 unsigned long identButtonDebounce = 0;
 unsigned long updateLedsTimeout = 0;
+unsigned long hbLedTimeout = 0;
 
 void sendHeartbeat() {
   digitalWrite(PIN_HB_LED, HIGH);
@@ -188,7 +189,7 @@ void sendHeartbeat() {
     Serial.print(" ident");
   }
   Serial.println();
-  digitalWrite(PIN_HB_LED, LOW);
+  hbLedTimeout = millis() + 25;
 }
 
 void sendAbort() {
@@ -248,6 +249,9 @@ void pollLamptest() {
     digitalWrite(PIN_UPDATE_LED_2, LOW);
     digitalWrite(PIN_UPDATE_LED_3, LOW);
     digitalWrite(PIN_UPDATE_LED_4, LOW);
+  }
+  if (hbLedTimeout < now) {
+    digitalWrite(PIN_HB_LED, LOW);
   }
 }
 
