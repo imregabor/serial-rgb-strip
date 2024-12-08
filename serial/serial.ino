@@ -384,7 +384,7 @@ void loop() {
           digitalWrite(PIN_IDENT_LED, LOW);
           Serial.println("+");
         } else if (rcv == 'I') {
-          doingIdent = false;
+          doingIdent = true;
           digitalWrite(PIN_IDENT_LED, HIGH);
           Serial.println("+");
         } else if (rcv == '?') {
