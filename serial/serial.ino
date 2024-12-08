@@ -180,6 +180,8 @@ bool identButtonReleased = true;
 unsigned long identButtonDebounce = 0;
 unsigned long updateLedsTimeout = 0;
 unsigned long hbLedTimeout = 0;
+uint8_t timecheck = 0;
+
 
 void sendHeartbeat() {
   digitalWrite(PIN_HB_LED, HIGH);
@@ -197,14 +199,6 @@ void sendAbort() {
 }
 
 void pollLamptest() {
-  if (doingLt) {
-    digitalWrite(PIN_UPDATE_LED_1, HIGH);
-    digitalWrite(PIN_UPDATE_LED_2, HIGH);
-    digitalWrite(PIN_UPDATE_LED_3, HIGH);
-    digitalWrite(PIN_UPDATE_LED_4, HIGH);
-    digitalWrite(PIN_IDENT_LED, HIGH);
-    digitalWrite(PIN_HB_LED, HIGH);
-  }
   if (doingLt && digitalRead(PIN_LAMPTEST) == HIGH) {
     sendAbort();
     doingLt = false;
@@ -228,10 +222,20 @@ void pollLamptest() {
     pixels.show();
     sendAbort();
   }
+  if (doingLt) {
+    digitalWrite(PIN_UPDATE_LED_1, HIGH);
+    digitalWrite(PIN_UPDATE_LED_2, HIGH);
+    digitalWrite(PIN_UPDATE_LED_3, HIGH);
+    digitalWrite(PIN_UPDATE_LED_4, HIGH);
+    digitalWrite(PIN_IDENT_LED, HIGH);
+    digitalWrite(PIN_HB_LED, HIGH);
+  }
+}
 
+void doTimeCheck() {
   unsigned long now = millis();
 
-  if (identButtonDebounce <= now) {
+  if (identButtonDebounce < now) {
     identButtonDebounce = now;
     if (digitalRead(PIN_IDENT_BUTTON) == HIGH && !identButtonReleased) {
       identButtonReleased = true;
@@ -252,6 +256,10 @@ void pollLamptest() {
   if (hbLedTimeout < now) {
     digitalWrite(PIN_HB_LED, LOW);
   }
+  if (now > nextHb) {
+    nextHb = now + HBPERIOD;
+    sendHeartbeat();
+  }
 }
 
 void loop() {
@@ -261,12 +269,13 @@ void loop() {
       Serial.println("e");
       esent = true;
     }
-    unsigned long now = millis();
-    if (now > nextHb) {
-      nextHb = now + HBPERIOD;
-      sendHeartbeat();
-    }
     pollLamptest();
+    if (!timecheck) {
+      timecheck = 255;
+      doTimeCheck();
+    } else {
+      timecheck --;
+    }
   }
   while (Serial.available()) {
     esent = false;
