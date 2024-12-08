@@ -32,7 +32,7 @@
 // How many NeoPixels are attached to the Arduino?
 #define MAXNUMPIXELS      512
 
-#define DEBOUNCE_MILLIS   20
+#define DEBOUNCE_MILLIS   50
 
 
 // Serial port bitrate
