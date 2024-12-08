@@ -180,7 +180,9 @@ bool identButtonReleased = true;
 unsigned long identButtonDebounce = 0;
 unsigned long updateLedsTimeout = 0;
 unsigned long hbLedTimeout = 0;
+unsigned long abortTimeout = 0;
 uint8_t timecheck = 0;
+bool aborting = false;
 
 
 void sendHeartbeat() {
@@ -195,6 +197,8 @@ void sendHeartbeat() {
 }
 
 void sendAbort() {
+  aborting = true;
+  abortTimeout = millis() + 100;
   Serial.println("x");
 }
 
@@ -259,6 +263,9 @@ void doTimeCheck() {
   if (now > nextHb) {
     nextHb = now + HBPERIOD;
     sendHeartbeat();
+  }
+  if (aborting && now > abortTimeout) {
+    aborting = false;
   }
 }
 
@@ -379,11 +386,11 @@ void loop() {
         } else if (rcv == ';') {
           // send ack
           Serial.println("+");
-        } else if (rcv == 'i') {
+        } else if (rcv == 'i' && !aborting) {
           doingIdent = false;
           digitalWrite(PIN_IDENT_LED, LOW);
           Serial.println("+");
-        } else if (rcv == 'I') {
+        } else if (rcv == 'I' && !aborting) {
           doingIdent = true;
           digitalWrite(PIN_IDENT_LED, HIGH);
           Serial.println("+");
