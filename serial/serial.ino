@@ -276,10 +276,11 @@ void loop() {
       Serial.println("e");
       esent = true;
     }
-    pollLamptest();
+
     if (!timecheck) {
       timecheck = 255;
       doTimeCheck();
+      pollLamptest();
     } else {
       timecheck --;
     }
